@@ -1,107 +1,186 @@
-// load categories 
-const loadCategories = () => {
-    console.log("loadCategories created");
-    fetch('https://openapi.programming-hero.com/api/phero-tube/categories')
-    .then((res) => res.json())  // Parse the response as JSON
-    .then((data) => displayCategories(data.categories))  // Access the categories
-    .catch((error) => console.log(error));
-}
+console.log("video script added");
 
-// time function 
 function getTimeString(time) {
-    const second = 1;
-    const minute = 60 * second;
-    const hour = 60 * minute;
-    const day = 24 * hour;
-    const month = 30 * day; // Approximated to 30 days
-    const year = 12 * month; // Approximated to 12 months (360 days)
-
-    if (time >= year) {
-        const years = Math.floor(time / year);
-        return `${years} year${years > 1 ? 's' : ''} ago`;
-    } else if (time >= month) {
-        const months = Math.floor(time / month);
-        return `${months} month${months > 1 ? 's' : ''} ago`;
-    } else if (time >= day) {
-        const days = Math.floor(time / day);
-        return `${days} day${days > 1 ? 's' : ''} ago`;
-    } else if (time >= hour) {
-        const hours = Math.floor(time / hour);
-        const remainingMinutes = Math.floor((time % hour) / minute);
-        return `${hours} hour${hours > 1 ? 's' : ''} ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''} ago`;
-    } else if (time >= minute) {
-        const minutes = Math.floor(time / minute);
-        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-    } else {
-        return `${time} second${time > 1 ? 's' : ''} ago`;
-    }
+  //get Hour and rest seconds
+  const hour = parseInt(time / 3600);
+  let remainingSecond = time % 3600;
+  const minute = parseInt(remainingSecond / 60);
+  remainingSecond = remainingSecond % 60;
+  return `${hour} hour  ${minute} minute ${remainingSecond} second ago`;
 }
-
-
-// load Videos 
-const loadVideos = () => {
-    console.log("loadVideos created");
-    fetch('https://openapi.programming-hero.com/api/phero-tube/videos')
-    .then((res) => res.json())  // Parse the response as JSON
-    .then((data) => displayVideos(data.videos))  // Access the videos
+const removeActiveClass = () => {
+  const buttons = document.getElementsByClassName("category-btn");
+  console.log(buttons);
+  for (let btn of buttons) {
+    btn.classList.remove("active");
+  }
+};
+//1 -  Fetch,  Load and  Show Categories on html
+//create loadCategories
+const loadCategories = () => {
+  //fetch the data
+  fetch("https://openapi.programming-hero.com/api/phero-tube/categories")
+    .then((res) => res.json())
+    .then((data) => displayCategories(data.categories))
     .catch((error) => console.log(error));
-}
+};
+const loadVideos = (searchText = "") => {
+  //fetch the data
+  fetch(
+    `https://openapi.programming-hero.com/api/phero-tube/videos?title=${searchText}`
+  )
+    .then((res) => res.json())
+    .then((data) => displayVideos(data.videos))
+    .catch((error) => console.log(error));
+};
 
-// display videos 
-// display videos 
+const loadCategoryVideos = (id) => {
+  // alert(id);
+  fetch(`https://openapi.programming-hero.com/api/phero-tube/category/${id}`)
+    .then((res) => res.json())
+    .then((data) => {
+      //sobaike active class remove korao
+      removeActiveClass();
+
+      //id er class k active korao
+      const activeBtn = document.getElementById(`btn-${id}`);
+      activeBtn.classList.add("active");
+      displayVideos(data.category);
+    })
+    .catch((error) => console.log(error));
+};
+const loadDetails = async (videoId) => {
+  console.log(videoId);
+  const uri = `https://openapi.programming-hero.com/api/phero-tube/video/${videoId}`;
+  const res = await fetch(uri);
+  const data = await res.json();
+  displayDetails(data.video);
+};
+const displayDetails = (video) => {
+  console.log(video);
+  const detailContainer = document.getElementById("modal-content");
+
+  detailContainer.innerHTML = `
+   <img src=${video.thumbnail} />
+   <p>${video.description}</p>
+  `;
+
+  // way-1
+  // document.getElementById("showModalData").click();
+  //way-2
+  document.getElementById("customModal").showModal();
+};
+
+// const cardDemo = {
+//   category_id: "1001",
+//   video_id: "aaad",
+//   thumbnail: "https://i.ibb.co/f9FBQwz/smells.jpg",
+//   title: "Smells Like Teen Spirit",
+//   authors: [
+//     {
+//       profile_picture: "https://i.ibb.co/k4tkc42/oliviar-harris.jpg",
+//       profile_name: "Oliver Harris",
+//       verified: true,
+//     },
+//   ],
+//   others: {
+//     views: "5.4K",
+//     posted_date: "1672656000",
+//   },
+//   description:
+//     "'Smells Like Teen Spirit' by Oliver Harris captures the raw energy and rebellious spirit of youth. With over 5.4K views, this track brings a grunge rock vibe, featuring powerful guitar riffs and compelling vocals. Oliver's verified profile guarantees a quality musical journey that resonates with fans of dynamic, high-energy performances.",
+// };
+
 const displayVideos = (videos) => {
-    const videosContainer = document.getElementById('videos');
-    videos.forEach((video) => {
-        console.log(video);
+  const videoContainer = document.getElementById("videos");
+  videoContainer.innerHTML = "";
 
-        const card = document.createElement('div');
-        card.classList = 'card card-compact rounded-lg overflow-hidden'; // Added styles for card
+  if (videos.length == 0) {
+    videoContainer.classList.remove("grid");
+    videoContainer.innerHTML = `
+    <div class="min-h-[300px] flex flex-col gap-5 justify-center items-center">
+    
+      <img src="assets/Icon.png" /> 
+      <h2 class="text-center text-xl font-bold"> No Content Here in this Categery </h2> 
+    </div>`;
+  } else {
+    videoContainer.classList.add("grid");
+  }
 
-        // Dynamically set video information in the card
-        card.innerHTML = `
-            <figure class="h-[200px] relative">
-                <img src="${video.thumbnail}" alt="${video.title}" class="h-full w-full object-cover" />
-              ${video.others.posted_date?.length==0 ? "": ` 
-                <span class="absolute right-2 bottom-2 text-white bg-black bg-opacity-60 rounded px-2 py-1 text-sm">${getTimeString(video.others.posted_date)}</span> `
+  videos.forEach((video) => {
+    // console.log(video);
+    const card = document.createElement("div");
+    card.classList = "card card-compact ";
+    card.innerHTML = `
+     <figure class="h-[200px] relative">
+        <img
+        src=${video.thumbnail}
+        class="h-full w-full object-cover"
+        alt="Shoes" />
+        ${
+          video.others.posted_date?.length == 0
+            ? ""
+            : `<span class="absolute text-xs right-2 bottom-2 bg-black text-white rounded p-1">${getTimeString(
+                video.others.posted_date
+              )}</span>`
+        }
+        
+    </figure>
+    <div class="px-0 py-2 flex gap-2">
+        <div>
+            <img class="w-10 h-10 rounded-full object-cover" src=${
+              video.authors[0].profile_picture
+            } />
+        </div>
+        <div>
+        <h2 class="font-bold">${video.title}</h2>
+        <div class="flex items-center gap-2">
+            <p class="text-gray-400">${video.authors[0].profile_name}</p>
+
+            ${
+              video.authors[0].verified == true
+                ? `<img class="w-5" src="https://img.icons8.com/?size=96&id=D9RtvkuOe31p&format=png"/>`
+                : ""
             }
 
+            
+        </div>
+        <p> <button  onclick="loadDetails('${
+          video.video_id
+        }')" class="btn btn-sm btn-error">details</button> </p>
+        </div>
+    </div>
+    `;
+    videoContainer.append(card);
+  });
+};
 
+// {
+//     "category_id": "1001",
+//     "category": "Music"
+// }
 
-            </figure>
-
-            <div class="p-4 flex gap-2 items-center">
-                <img class="w-10 h-10 rounded-full object-cover" src=${video.authors[0].profile_picture} alt="Profile Picture" />
-                
-                <div class="flex-1">
-                    <h2 class="font-bold text-base">${video.title}</h2>
-                    <div class="flex items-center gap-1 text-gray-400 text-sm">
-                        <p>${video.authors[0].profile_name}</p>
-                        ${video.authors[0].verified ? 
-                            `<img class="w-4 h-4" src="https://img.icons8.com/?size=48&id=98A4yZTt9abw&format=png" alt="Verified">` : ""}
-                    </div>
-                </div>
-            </div>
-        `;
-
-        videosContainer.append(card);
-    });
-}
-
-
-// display categories 
+//Create DisplayCategories
 const displayCategories = (categories) => {
-    const categoriesContainer = document.getElementById('categories');
-    categories.forEach((item) => {
-        console.log(item);
+  const categoryContainer = document.getElementById("categories");
 
-        const button = document.createElement('button');
-        button.classList = "btn";
-        button.innerText = item.category;  // Assuming 'category' is a property of each category
-        
-        // Add button to categories 
-        categoriesContainer.append(button);
-    });
-}
+  categories.forEach((item) => {
+    console.log(item);
+    //create a button
+    const buttonContainer = document.createElement("div");
+    buttonContainer.innerHTML = `
+      <button id="btn-${item.category_id}" onclick="loadCategoryVideos(${item.category_id})" class="btn category-btn">
+       ${item.category}
+      </button>
+    `;
 
+    //add button to catagory container
+    categoryContainer.append(buttonContainer);
+  });
+};
+
+document.getElementById("search-input").addEventListener("keyup", (e) => {
+  loadVideos(e.target.value);
+});
 loadCategories();
-loadVideos();  // Call this to load and display videos
+loadVideos();
